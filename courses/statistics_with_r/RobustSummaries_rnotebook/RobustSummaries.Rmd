@@ -1,0 +1,54 @@
+---
+title: "Robust summaries"
+output: html_notebook
+---
+
+### Outliers and more robust metrics
+Outliers are extreme values which affect the value of the sample mean and standard deviation. In order to handle this problem, we need more robust summaries regarding outliers.
+We will use one of the datasets included in R, which contains weight of chicks in grams as they grow from day 0 to day 21. This dataset also splits up the chicks by different protein diets, which are coded from 1 to 4
+#### Median
+An example of more robust summary is the median which is simply the middle point of the data. 
+
+```{r}
+library(dplyr)
+library(rafalib)
+library(readr)
+
+data(ChickWeight)
+
+head(ChickWeight)
+chick = reshape(ChickWeight, idvar=c("Chick","Diet"), timevar="Time",direction="wide")
+head(chick)
+
+#We also want to remove any chicks that have missing observations at any time points (NA for "not available")
+chick = na.omit(chick)
+extended_chickweight4 <- c(3000,chick$weight.4)
+
+mean_ratio <- mean(extended_chickweight4) / mean(chick$weight.4)
+median_ratio <- median(extended_chickweight4) / median(chick$weight.4)
+cat('Mean change ratio:',mean_ratio, ' and Median change ratio:',median_ratio)
+```
+
+#### Median Absolute Deviation (MAD)
+Another metric we can use is the Median Absolute Deviation (MAD) which is a robust estimate of the standard deviation. To compute the MAD, we need to find, first, the median of our sample. Afterward, we compute the distance of each point to the median.
+We compute the distance as the absolute value of the difference.Then we take the median of those deviations -- that's where the name comes -- median absolute deviation-- MAD.
+We multiply by this factor 1.4826 to make the summary statistic unbiased. On average, it's going to be equal to the standard deviation.
+$ MAD=1.4826 \times median\{|X_i - median(X_i)|\} $
+
+```{r}
+sd_ratio <- sd(extended_chickweight4) / sd(chick$weight.4)
+mad_ratio <- mad(extended_chickweight4) / mad(chick$weight.4)
+cat('\nStandard deviation change ratio:',sd_ratio,' and MAD ratio:',mad_ratio)
+```
+#### Spearman correlation
+The Spearman correlation is used to measure the relationship between two ordinal variables. This metric is also used to measure relationship between two variables that are related but not linearly.
+To calculate the Spearman correlation, we need first to rank the scores (the data points values). The lowest score has the lowest rank and the highest point value has the highest rank. We will now use the ranks to compute $rs= \frac{\sum x_i y_i - \frac{(\sum x_i)(\sum y_i)}{n}}{\sqrt{\sum x_i^2 - \frac{(\sum x_i)^2}{n}} \sqrt{\sum y_i^2 - \frac{(\sum y_i)^2}{n}}}$
+Since Instead of looking at the values, we look at the ranks the Spearman correlation metric is not impacted by outliers.
+
+```{r}
+extended_chickweight21 <- c(3000,chick$weight.21)
+pearson_ratio <- cor(extended_chickweight4,extended_chickweight21) / cor(chick$weight.4,chick$weight.21)
+spearman_ratio <- cor(extended_chickweight4,extended_chickweight21,method="spearman") / cor(chick$weight.4,chick$weight.21,method="spearman")
+cat('\nPearson correlation change ratio:',pearson_ratio,' and Spearman correlation ratio:',spearman_ratio)
+```
+
